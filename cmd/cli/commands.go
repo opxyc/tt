@@ -44,7 +44,6 @@ var commands = []*cli.Command{
 			&cli.BoolFlag{
 				Name:        "csv",
 				DefaultText: "true",
-				Value:       true,
 			},
 		},
 		Action: list,

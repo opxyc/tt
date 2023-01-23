@@ -14,7 +14,24 @@ import (
 )
 
 func start() error {
+	activitiesInProgress, err := ttService.List(&tt.ListFilters{Status: []tt.ActivityStatus{tt.StatusInProgress}})
+	if err != nil {
+		fmt.Printf("failed to start: %s\n", err)
+		os.Exit(1)
+	}
+
+	if len(activitiesInProgress) != 0 {
+		err = pauseActivity(&activitiesInProgress[0])
+		if err != nil {
+			fmt.Printf("failed to pause '%s': %s\n", activitiesInProgress[0].Title, err)
+			os.Exit(1)
+		}
+
+		fmt.Println("new activity:")
+	}
+
 	buffer := bufio.NewReader(os.Stdin)
+
 	fmt.Print("> title ")
 	title, _ := buffer.ReadString('\n')
 	title = strings.TrimSpace(strings.TrimSuffix(title, "\n"))
@@ -27,7 +44,7 @@ func start() error {
 	tags, _ := buffer.ReadString('\n')
 	tags = strings.TrimSpace(strings.TrimSuffix(tags, "\n"))
 
-	_, err := ttService.Start(title, description, tags)
+	_, err = ttService.Start(title, description, tags)
 	if err != nil {
 		fmt.Printf("failed to start '%s': %s\n", title, err)
 		os.Exit(1)
@@ -38,31 +55,22 @@ func start() error {
 }
 
 func pause(_ *cli.Context) error {
-	activitiesCurrentlyInProgress, err := ttService.List(&tt.ListFilters{Status: []tt.ActivityStatus{tt.StatusInProgress}})
+	// there will be only one activity currently in progress since we do not allow to start another
+	// activity when one is in progress
+	activitiesInProgress, err := ttService.List(&tt.ListFilters{Status: []tt.ActivityStatus{tt.StatusInProgress}})
 	if err != nil {
 		fmt.Printf("failed to pause: %s\n", err)
 		os.Exit(1)
 	}
 
-	if len(activitiesCurrentlyInProgress) < 1 {
+	if len(activitiesInProgress) < 1 {
 		fmt.Println("no activities in progress")
 		os.Exit(1)
 	}
 
-	activityCurrentlyInProgress := activitiesCurrentlyInProgress[0]
-
-	input := ""
-	fmt.Printf("are you sure to pause '%s'? (Y/n) ", activityCurrentlyInProgress.Title)
-	fmt.Scanln(&input)
-	input = strings.ToLower(input)
-
-	if input == "n" {
-		os.Exit(0)
-	}
-
-	_, err = ttService.Pause(activityCurrentlyInProgress.ID)
+	err = pauseActivity(&activitiesInProgress[0])
 	if err != nil {
-		fmt.Printf("failed to pause '%s': %s\n", activityCurrentlyInProgress.Title, err)
+		fmt.Printf("failed to pause '%s': %s\n", activitiesInProgress[0].Title, err)
 		os.Exit(1)
 	}
 
@@ -70,8 +78,28 @@ func pause(_ *cli.Context) error {
 	return nil
 }
 
+func pauseActivity(activityInProgress *tt.Activity) error {
+	input := ""
+	fmt.Printf("are you sure to pause '%s'? (Y/n) ", activityInProgress.Title)
+	fmt.Scanln(&input)
+	input = strings.ToLower(input)
+
+	if input == "n" {
+		os.Exit(0)
+	}
+
+	_, err := ttService.Pause(activityInProgress.ID)
+	return err
+}
+
 func resume(_ *cli.Context) error {
 	pausedActivities, err := ttService.List(&tt.ListFilters{Status: []tt.ActivityStatus{tt.StatusPaused}})
+	if err != nil {
+		fmt.Printf("failed to resume: %s\n", err)
+		os.Exit(1)
+	}
+
+	activitiesInProgress, err := ttService.List(&tt.ListFilters{Status: []tt.ActivityStatus{tt.StatusInProgress}})
 	if err != nil {
 		fmt.Printf("failed to resume: %s\n", err)
 		os.Exit(1)
@@ -95,6 +123,14 @@ func resume(_ *cli.Context) error {
 	if err != nil || indexSelected > totalPausedActivities-1 {
 		fmt.Println("invalid input")
 		os.Exit(1)
+	}
+
+	if len(activitiesInProgress) != 0 {
+		err = pauseActivity(&activitiesInProgress[0])
+		if err != nil {
+			fmt.Printf("failed to resume: %s\n", err)
+			os.Exit(1)
+		}
 	}
 
 	_, err = ttService.Resume(pausedActivities[indexSelected].ID)
@@ -196,7 +232,7 @@ func printAsTable(activityList *[]tt.Activity) {
 		rows = append(rows, table.Row{activity.CreatedAt.Format("2006-01-02 03:04:05 PM"), activity.Title, activity.Desc, activity.Tags, activity.Status, activity.Duration})
 	}
 	t.AppendRows(rows)
-	t.SetStyle(table.StyleLight)
+	t.SetStyle(table.StyleRounded)
 	t.Render()
 }
 
