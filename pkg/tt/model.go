@@ -15,15 +15,16 @@ type TimeChunk struct {
 type ActivityTrack map[int]TimeChunk
 
 type Activity struct {
-	gorm.Model
-	ID          uint `gorm:"primarykey"`
+	ID          string `gorm:"primarykey"`
 	Title       string
 	Desc        string
 	Tags        string
 	Status      ActivityStatus // IN_PROGRESS, PAUSED, COMPLETE
 	Track       datatypes.JSON
 	Duration    float64 // in minutes
+	CreatedAt   *time.Time
 	CompletedAt *time.Time
+	DeletedAt   gorm.DeletedAt
 }
 
 /*

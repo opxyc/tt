@@ -3,6 +3,7 @@ package tt
 import (
 	"encoding/json"
 	"errors"
+	"github.com/google/uuid"
 	"math"
 	"time"
 )
@@ -32,6 +33,7 @@ func (tts *ttService) Start(title, desc, tags string) (*Activity, error) {
 	}
 
 	newActivity := &Activity{
+		ID:       uuid.NewString(),
 		Title:    title,
 		Desc:     desc,
 		Tags:     tags,
@@ -48,7 +50,7 @@ func (tts *ttService) Start(title, desc, tags string) (*Activity, error) {
 	return newActivity, nil
 }
 
-func (tts *ttService) Stop(activityID uint) (*Activity, error) {
+func (tts *ttService) Stop(activityID string) (*Activity, error) {
 	activity, err := tts.repo.Find(activityID)
 	if err != nil {
 		return nil, err
@@ -90,7 +92,7 @@ func (tts *ttService) List(filters *ListFilters) ([]Activity, error) {
 	return tts.repo.List(filters)
 }
 
-func (tts *ttService) Pause(activityID uint) (*Activity, error) {
+func (tts *ttService) Pause(activityID string) (*Activity, error) {
 	activity, err := tts.repo.Find(activityID)
 	if err != nil {
 		return nil, err
@@ -120,7 +122,7 @@ func (tts *ttService) Pause(activityID uint) (*Activity, error) {
 	return activity, nil
 }
 
-func (tts *ttService) Resume(activityID uint) (*Activity, error) {
+func (tts *ttService) Resume(activityID string) (*Activity, error) {
 	activity, err := tts.repo.Find(activityID)
 	if err != nil {
 		return nil, err
@@ -150,7 +152,7 @@ func (tts *ttService) Resume(activityID uint) (*Activity, error) {
 	return activity, nil
 }
 
-func (tts *ttService) Delete(activityID uint) (*Activity, error) {
+func (tts *ttService) Delete(activityID string) (*Activity, error) {
 	activity, err := tts.repo.Find(activityID)
 	if err != nil {
 		return nil, err
