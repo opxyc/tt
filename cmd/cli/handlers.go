@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/csv"
 	"fmt"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/opxyc/tt/pkg/tt"
@@ -149,36 +150,54 @@ func stop(_ *cli.Context) error {
 }
 
 func list(cCtx *cli.Context) error {
-	filterDate := cCtx.String("date")
+	filterDateFlagValue := cCtx.String("date")
+	printAsCsvFlagValue := cCtx.Bool("csv")
 	filters := &tt.ListFilters{Date: time.Now().Format("2006-01-02")}
-	if filterDate == "all" {
+	if filterDateFlagValue == "all" {
 		filters.Date = ""
-	} else if len(filterDate) == len("2006-10-11") {
-		filters.Date = filterDate
+	} else if len(filterDateFlagValue) == len("2006-10-11") {
+		filters.Date = filterDateFlagValue
 	}
 
-	activitesList, err := ttService.List(filters)
+	activityList, err := ttService.List(filters)
 	if err != nil {
 		return err
 	}
 
-	if len(activitesList) == 0 {
+	if len(activityList) == 0 {
 		fmt.Println("nothing to list")
 		return nil
 	}
 
+	if printAsCsvFlagValue {
+		return printAsCsv(&activityList)
+	}
+
+	printAsTable(&activityList)
+	return nil
+}
+
+func printAsCsv(activityList *[]tt.Activity) error {
+	w := csv.NewWriter(os.Stdout)
+	var rows [][]string
+	for _, activity := range *activityList {
+		rows = append(rows, []string{activity.CreatedAt.Format("2006-01-02 03:04:05 PM"), activity.Title, activity.Desc, activity.Tags, string(activity.Status), fmt.Sprintf("%f", activity.Duration)})
+	}
+
+	return w.WriteAll(rows)
+}
+
+func printAsTable(activityList *[]tt.Activity) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 	t.AppendHeader(table.Row{"DT", "Title", "Description", "Tags", "Status", "Duration"})
 	var rows []table.Row
-	for _, activity := range activitesList {
+	for _, activity := range *activityList {
 		rows = append(rows, table.Row{activity.CreatedAt.Format("2006-01-02 03:04:05 PM"), activity.Title, activity.Desc, activity.Tags, activity.Status, activity.Duration})
 	}
 	t.AppendRows(rows)
 	t.SetStyle(table.StyleLight)
 	t.Render()
-
-	return nil
 }
 
 func delete(_ *cli.Context) error {
