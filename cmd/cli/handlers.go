@@ -175,6 +175,7 @@ func list(cCtx *cli.Context) error {
 		rows = append(rows, table.Row{activity.CreatedAt.Format("2006-01-02 03:04:05 PM"), activity.Title, activity.Desc, activity.Tags, activity.Status, activity.Duration})
 	}
 	t.AppendRows(rows)
+	t.SetStyle(table.StyleLight)
 	t.Render()
 
 	return nil

@@ -1,9 +1,9 @@
 package tt
 
 type Repository interface {
-	Find(activityID uint) (*Activity, error)
+	Find(activityID string) (*Activity, error)
 	Store(activity *Activity) error
 	List(filters *ListFilters) ([]Activity, error)
-	Update(activityID uint, activity *Activity) error
-	Delete(activityID uint) error
+	Update(activityID string, activity *Activity) error
+	Delete(activityID string) error
 }

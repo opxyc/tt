@@ -10,7 +10,7 @@ type sqliteRepository struct {
 	client *gorm.DB
 }
 
-func (s *sqliteRepository) Find(activityID uint) (*tt.Activity, error) {
+func (s *sqliteRepository) Find(activityID string) (*tt.Activity, error) {
 	activity := &tt.Activity{}
 	err := s.client.Where("id = ?", activityID).First(activity).Error
 	return activity, err
@@ -39,12 +39,13 @@ func (s *sqliteRepository) List(filters *tt.ListFilters) ([]tt.Activity, error) 
 	return activities, nil
 }
 
-func (s *sqliteRepository) Update(activityID uint, activity *tt.Activity) error {
+func (s *sqliteRepository) Update(activityID string, activity *tt.Activity) error {
 	return s.client.Model(&tt.Activity{}).Where("id = ?", activityID).Updates(activity).Error
 }
 
-func (s *sqliteRepository) Delete(activityID uint) error {
-	return s.client.Delete(&tt.Activity{}, activityID).Error
+func (s *sqliteRepository) Delete(activityID string) error {
+	activity := &tt.Activity{}
+	return s.client.Model(activity).Where("id = ?", activityID).Delete(activity).Error
 }
 
 func NewSqliteRespository(sqliteDSN string) (tt.Repository, error) {
